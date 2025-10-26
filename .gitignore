@@ -1,0 +1,6 @@
+00_envs/
+000_data
+000_archived_data
+*.lammps
+slurm*
+*.ipynb
