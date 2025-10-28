@@ -99,6 +99,37 @@ def performDXA(data):
 
     return None
 
+def performWS(data):
+
+    # Run WS analysis
+    wsModifier = WignerSeitzAnalysisModifier()
+    wsModifier.reference = FileSource()
+    wsModifier.reference.load(REFERENCE_FILE)
+
+    data.apply(wsModifier)
+
+    # Select normal sites
+    # expModifier = ExpressionSelectionModifier(expression = 'Occupancy == 1')
+    # data.apply(expModifier)
+
+    # Delete Selected
+    # delModifier = DeleteSelectedModifier()
+    # data.apply(delModifier)
+
+    timestep = data.attributes['Timestep']
+
+    # Export the file
+    export_file(
+            data,
+            os.path.join(WS_DIR, f'ws_{timestep}'),
+            "lammps/dump",
+            columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z", "Occupancy"],
+        )
+    
+    print(f"WSA for timestep {timestep} complete...", flush=True)
+
+    return None
+
 # --------------------------- UTILITIES ---------------------------#
 
 def view_information(data):

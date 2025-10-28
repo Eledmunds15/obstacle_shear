@@ -1,8 +1,8 @@
 # =============================================================
-# LAMMPS Dislocation-Precipitate Interaction Simulation
+# LAMMPS Dislocation-Void Interaction Simulation
 # Author: Ethan L. Edmunds
 # Version: v1.0
-# Description: Python script to produce input for precipitate calculations.
+# Description: Python script to produce input for void calculations.
 # Note: Dislocation is aligned along X, glide plane along Y axis.
 # Run: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 03_pin_dislo/run.py
 # =============================================================
@@ -45,7 +45,7 @@ EXTERNAL_FILE = os.path.join(os.path.dirname(__file__), 'funcs.py')
 # =============================================================
 
 VOID_RADIUS = 10 # Angstroms
-DISLOCATION_INITIAL_DISPLACEMENT = 40 # Distance from the precipitate in Angstroms
+DISLOCATION_INITIAL_DISPLACEMENT = 40 # Distance from the void in Angstroms
 FIXED_SURFACE_DEPTH = 5 # Depth of the fixed surface in Angstroms
 
 DT = 0.001
@@ -85,7 +85,6 @@ def main():
     # Find the box bounds
     boxBounds = lmp.extract_box()
 
-    box_min = boxBounds[0]
     box_max = boxBounds[1]
 
     xmin, xmax = box_min[0], box_max[0]
@@ -106,8 +105,8 @@ def main():
     #--- Define Groups ---#
     lmp.cmd.group('top_surface', 'region', 'top_surface_reg')
     lmp.cmd.group('bottom_surface', 'region', 'bottom_surface_reg')
-    lmp.cmd.group('void', 'region', 'precipitate_reg')
-    lmp.cmd.group('mobile_atoms', 'subtract', 'all', 'precipitate', 'top_surface', 'bottom_surface')
+    lmp.cmd.group('void', 'region', 'void_reg')
+    lmp.cmd.group('mobile_atoms', 'subtract', 'all', 'void', 'top_surface', 'bottom_surface')
 
     #--- Remove atoms ---#
     lmp.cmd.delete_atoms('group', 'void')
