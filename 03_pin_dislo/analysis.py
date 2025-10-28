@@ -90,7 +90,7 @@ def performDXA(data):
 
     timestep = data.attributes['Timestep']
 
-    export_file(data, os.path.join(DXA_DIR, f'dxa_{int(timestep)}'), "ca")
+    export_file(data, os.path.join(DXA_DIR, f'dxa_{int(timestep)}'), "ca", export_mesh=False)
 
     export_file(data, os.path.join(DXA_ATOMS_DIR, f'dxa_atoms_{int(timestep)}'), "lammps/dump",
             columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z", "c_peratom", "Cluster"])
