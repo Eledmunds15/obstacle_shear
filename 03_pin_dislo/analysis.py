@@ -25,8 +25,8 @@ WS_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz') # File with wigner seitz a
 for directory in [DXA_DIR, DXA_SUMMARY_DIR, DXA_ATOMS_DIR, WS_DIR]:
     os.makedirs(directory, exist_ok=True)
 
-REFERENCE_DIR = os.path.abspath(os.path.join(BASE_DIR, '02_minimize', 'output')) # Input directory
-REFERENCE_FILE = os.path.join(REFERENCE_DIR, 'output.lmp') # Input file
+REFERENCE_DIR = os.path.abspath(os.path.join(BASE_DIR, '02_minimize', 'dump')) # Input directory
+REFERENCE_FILE = os.path.join(REFERENCE_DIR, 'edge_dislo_100_60_40_dump') # Input file
 
 DATA_DIR = os.path.abspath(os.path.join(STAGE_DATA_DIR, 'dump'))
 
