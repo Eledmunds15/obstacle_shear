@@ -56,6 +56,10 @@ def main():
 
     #--- PROCESS FILES ---#
     process_file(dump_files[start:end])
+
+    comm.Barrier()
+
+    if rank == 0: print("Successfully processed all files...")
     
     return None
 
@@ -71,6 +75,7 @@ def process_file(dump_chunk):
         data = pipeline.compute()
 
         performDXA(data)
+        performWS(data)
         
         print(f"Successfully processed frame {frame}...", flush=True)
 
