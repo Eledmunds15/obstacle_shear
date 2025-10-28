@@ -52,7 +52,7 @@ DT = 0.001
 TEMPERATURE = 10
 SHEAR_VELOCITY = 0.01
 
-RUN_TIME = 100000
+RUN_TIME = 100
 THERMO_FREQ = 1000
 DUMP_FREQ = 1000
 RESTART_FREQ = DUMP_FREQ
@@ -128,9 +128,6 @@ def main():
     lmp.cmd.fix('bottom_surface_freeze', 'bottom_surface', 'setforce', 0.0, 0.0, 0.0)
     lmp.cmd.velocity('top_surface', 'set', -(SHEAR_VELOCITY), 0.0, 0.0)
     lmp.cmd.velocity('bottom_surface', 'set', 0.0, 0.0, 0.0)
-
-    lmp.cmd.fix('precipitate_freeze', 'precipitate', 'setforce', 0.0, 0.0, 0.0)
-    lmp.cmd.velocity('precipitate', 'set', 0.0, 0.0, 0.0)
 
     #--- Dump ID's for post-processing or future simulations ---#
     lmp.cmd.write_dump('void', 'custom', os.path.join(OUTPUT_DIR, 'void_ID.txt'), 'id', 'x', 'y', 'z')
