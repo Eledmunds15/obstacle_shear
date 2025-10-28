@@ -4,6 +4,7 @@
 # Version: v1.0
 # Description: Python script to produce input for precipitate calculations.
 # Note: Dislocation is aligned along Z, glide plane along X axis, climb plane is Y axis.
+# Command: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 01_input/run.py
 # =============================================================
 
 # ---------------------------
@@ -63,7 +64,7 @@ def main():
 
     subprocess.run(['atomsk', 'Fe_unitcell.cfg', '-duplicate', str(X_MIN+1), str(Y_MIN), str(Z_MIN), '-deform', 'X', str(-0.5/(X_MIN+1)), '0.0', 'top.cfg'])
 
-    subprocess.run(['atomsk', '--merge', 'Y', '2', 'bottom.cfg', 'top.cfg', 'Fe_edge_bicrystal.lmp'])
+    subprocess.run(['atomsk', '--merge', 'Y', '2', 'bottom.cfg', 'top.cfg', f'edge_dislo_{X_MIN}_{Y_MIN}_{Z_MIN}.lmp'])
 
 # =============================================================
 # FUNCTIONS

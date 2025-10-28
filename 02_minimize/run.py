@@ -4,6 +4,7 @@
 # Version: v1.0
 # Description: Python script to produce input for precipitate calculations.
 # Note: Dislocation is aligned along X, glide plane along Y axis.
+# Command: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif mpirun.openmpi -np 16 python3 02_minimize/run.py
 # =============================================================
 
 # ---------------------------
@@ -31,7 +32,7 @@ for directory in [OUTPUT_DIR, DUMP_DIR, LOG_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 INPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, '01_input', 'output')) # Input directory
-INPUT_FILE = os.path.join(INPUT_DIR, 'input.lmp') # Input file
+INPUT_FILE = os.path.join(INPUT_DIR, 'edge_dislo_100_30_40.lmp') # Input file
 
 POTENTIALS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '00_potentials')) # Potentials Directory
 POTENTIAL_FILE = os.path.join(POTENTIALS_DIR, 'malerba.fs') # Potential file
@@ -74,8 +75,8 @@ def main():
 
     lmp.cmd.minimize(ENERGY_TOL, FORCE_TOL, 1000, 10000)
 
-    DUMP_PATH = os.path.join(DUMP_DIR, 'dump')
-    OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'output.lmp')
+    DUMP_PATH = os.path.join(DUMP_DIR, 'edge_dislo_100_30_40_dump')
+    OUTPUT_PATH = os.path.join(OUTPUT_DIR, 'edge_dislo_100_30_40_output.lmp')
 
     lmp.cmd.write_dump('all', 'custom', DUMP_PATH, 'id', 'x', 'y', 'z', 'c_peratom')
     lmp.cmd.write_data(OUTPUT_PATH)

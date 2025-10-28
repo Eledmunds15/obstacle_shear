@@ -33,7 +33,7 @@ for directory in [STAGE_DATA_DIR, OUTPUT_DIR, DUMP_DIR, LOG_DIR, RESTART_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 INPUT_DIR = os.path.abspath(os.path.join(BASE_DIR, '02_minimize')) # Input directory
-INPUT_FILE = os.path.join(INPUT_DIR, 'output', 'output.lmp') # Input file
+INPUT_FILE = os.path.join(INPUT_DIR, 'output', 'edge_dislo_100_60_40_output.lmp') # Input file
 
 POTENTIALS_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '00_potentials')) # Potentials Directory
 POTENTIAL_FILE = os.path.join(POTENTIALS_DIR, 'malerba.fs') # Potential file
@@ -44,15 +44,15 @@ EXTERNAL_FILE = os.path.join(os.path.dirname(__file__), 'funcs.py')
 # SIMULATION PARAMETERS
 # =============================================================
 
-PRECIPITATE_RADIUS = 25 # Angstroms
+VOID_RADIUS = 10 # Angstroms
 DISLOCATION_INITIAL_DISPLACEMENT = 40 # Distance from the precipitate in Angstroms
 FIXED_SURFACE_DEPTH = 5 # Depth of the fixed surface in Angstroms
 
 DT = 0.001
-TEMPERATURE = 1000
-SHEAR_VELOCITY = 0.001
+TEMPERATURE = 10
+SHEAR_VELOCITY = 0.01
 
-RUN_TIME = 1500000
+RUN_TIME = 100000
 THERMO_FREQ = 1000
 DUMP_FREQ = 1000
 RESTART_FREQ = DUMP_FREQ
@@ -96,18 +96,21 @@ def main():
 
     # Displace atoms
     lmp.cmd.group('all', 'type', '1')
-    lmp.cmd.displace_atoms('all', 'move', PRECIPITATE_RADIUS+DISLOCATION_INITIAL_DISPLACEMENT, 0, 0, 'units', 'box')
+    lmp.cmd.displace_atoms('all', 'move', VOID_RADIUS+DISLOCATION_INITIAL_DISPLACEMENT, 0, 0, 'units', 'box')
 
     # Create Regions
-    lmp.cmd.region('precipitate_reg', 'sphere', simBoxCenter[0], simBoxCenter[1], simBoxCenter[2], PRECIPITATE_RADIUS)
+    lmp.cmd.region('void_reg', 'sphere', simBoxCenter[0], simBoxCenter[1], simBoxCenter[2], VOID_RADIUS)
     lmp.cmd.region('top_surface_reg', 'block', 'INF', 'INF', (ymax-FIXED_SURFACE_DEPTH), 'INF', 'INF', 'INF')
     lmp.cmd.region('bottom_surface_reg', 'block', 'INF', 'INF', 'INF', (ymin+FIXED_SURFACE_DEPTH), 'INF', 'INF')
 
     #--- Define Groups ---#
     lmp.cmd.group('top_surface', 'region', 'top_surface_reg')
     lmp.cmd.group('bottom_surface', 'region', 'bottom_surface_reg')
-    lmp.cmd.group('precipitate', 'region', 'precipitate_reg')
+    lmp.cmd.group('void', 'region', 'precipitate_reg')
     lmp.cmd.group('mobile_atoms', 'subtract', 'all', 'precipitate', 'top_surface', 'bottom_surface')
+
+    #--- Remove atoms ---#
+    lmp.cmd.delete_atoms('group', 'void')
 
     #--- Define Computes ---#
     lmp.cmd.compute('peratom', 'all', 'pe/atom')
@@ -130,7 +133,7 @@ def main():
     lmp.cmd.velocity('precipitate', 'set', 0.0, 0.0, 0.0)
 
     #--- Dump ID's for post-processing or future simulations ---#
-    lmp.cmd.write_dump('precipitate', 'custom', os.path.join(OUTPUT_DIR, 'precipitate_ID.txt'), 'id', 'x', 'y', 'z')
+    lmp.cmd.write_dump('void', 'custom', os.path.join(OUTPUT_DIR, 'void_ID.txt'), 'id', 'x', 'y', 'z')
     lmp.cmd.write_dump('top_surface', 'custom', os.path.join(OUTPUT_DIR, 'top_surface_ID.txt'), 'id', 'x', 'y', 'z')
     lmp.cmd.write_dump('bottom_surface', 'custom', os.path.join(OUTPUT_DIR, 'bottom_surface_ID.txt'), 'id', 'x', 'y', 'z')
 
