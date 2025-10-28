@@ -52,9 +52,9 @@ DT = 0.001
 TEMPERATURE = 10
 SHEAR_VELOCITY = 0.01
 
-RUN_TIME = 100
-THERMO_FREQ = 1000
-DUMP_FREQ = 1000
+RUN_TIME = 1000
+THERMO_FREQ = 100
+DUMP_FREQ = 100
 RESTART_FREQ = DUMP_FREQ
 
 # =============================================================
