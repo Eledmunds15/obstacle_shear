@@ -85,6 +85,7 @@ def main():
     # Find the box bounds
     boxBounds = lmp.extract_box()
 
+    box_min = boxBounds[0]
     box_max = boxBounds[1]
 
     xmin, xmax = box_min[0], box_max[0]
