@@ -7,7 +7,7 @@ import re
 from mpi4py import MPI
 
 from ovito.io import import_file, export_file
-from ovito.modifiers import DislocationAnalysisModifier, WignerSeitzAnalysisModifier, ExpressionSelectionModifier, DeleteSelectedModifier
+from ovito.modifiers import DislocationAnalysisModifier, WignerSeitzAnalysisModifier, DeleteSelectedModifier, InvertSelectionModifier
 from ovito.pipeline import FileSource
 
 # =============================================================
@@ -20,9 +20,10 @@ STAGE_DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, '03_pin_dislo')) # Stage
 DXA_DIR = os.path.join(STAGE_DATA_DIR, 'dxa') # File with DXA analysis
 DXA_SUMMARY_DIR = os.path.join(STAGE_DATA_DIR, 'dxa_summary') # File with DXA summary files
 DXA_ATOMS_DIR = os.path.join(STAGE_DATA_DIR, 'dxa_atoms') # File with the atoms extracted by DXA
-WS_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz') # File with wigner seitz analysis files
+WS_VAC_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz_vacs') # File with wigner seitz analysis files
+WS_SIA_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz_sias') # File with wigner seitz analysis files
 
-for directory in [DXA_DIR, DXA_SUMMARY_DIR, DXA_ATOMS_DIR, WS_DIR]:
+for directory in [DXA_DIR, DXA_SUMMARY_DIR, DXA_ATOMS_DIR, WS_VAC_DIR, WS_SIA_DIR]:
     os.makedirs(directory, exist_ok=True)
 
 REFERENCE_DIR = os.path.abspath(os.path.join(BASE_DIR, '02_minimize', 'dump')) # Input directory
@@ -106,32 +107,65 @@ def performDXA(data):
 
 def performWS(data):
 
-    # Run WS analysis
+    # Modifier Definition
     wsModifier = WignerSeitzAnalysisModifier()
     wsModifier.reference = FileSource()
     wsModifier.reference.load(REFERENCE_FILE)
 
     data.apply(wsModifier)
 
-    # Select normal sites
-    # expModifier = ExpressionSelectionModifier(expression = 'Occupancy == 1')
-    # data.apply(expModifier)
-
-    # Delete Selected
-    # delModifier = DeleteSelectedModifier()
-    # data.apply(delModifier)
-
     timestep = data.attributes['Timestep']
+
+    """print(f"Data in data: {data.particles}")
+    print(f"Number of total particles {data.particles.count}")"""
+
+    data_vac = data.clone()
+    data_sia = data.clone()
+
+    """print(f"\nVacancies")
+    print(f"Data in data: {data_vac.particles}")
+    print(f"Number of total particles {data_vac.particles.count}")
+
+    print(f"\nSelf-interstitials")
+    print(f"Data in data: {data_sia.particles}")
+    print(f"Number of total particles {data_sia.particles.count}")"""
+
+    occupancies = data.particles['Occupancy']
+
+    selection_vac = data_vac.particles_.create_property('Selection')
+    selection_sia = data_sia.particles_.create_property('Selection')
+
+    selection_vac[...] = (occupancies == 0)
+    selection_sia[...] = (occupancies == 2)
+
+    """print(f"\nNumber of vacancies = {np.sum(selection_vac)}")
+    print(f"Number of self-interstitial = {np.sum(selection_sia)}")"""
+
+    data_vac.apply(InvertSelectionModifier())
+    data_sia.apply(InvertSelectionModifier())
+
+    data_vac.apply(DeleteSelectedModifier())
+    data_sia.apply(DeleteSelectedModifier())
+
+    """print(data_vac.particles.count)
+    print(data_sia.particles.count)"""
 
     # Export the file
     export_file(
-            data,
-            os.path.join(WS_DIR, f'ws_{timestep}'),
+            data_vac,
+            os.path.join(WS_VAC_DIR, f'ws_vac_{timestep}'),
             "lammps/dump",
-            columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z", "Occupancy"],
+            columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z"],
         )
-    
-    print(f"WSA for timestep {timestep} complete...", flush=True)
+
+    export_file(
+            data_sia,
+            os.path.join(WS_SIA_DIR, f'ws_vac_{timestep}'),
+            "lammps/dump",
+            columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z"],
+    )
+
+    print(f"DXA for timestep {timestep} complete...", flush=True)
 
     return None
 

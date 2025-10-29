@@ -98,6 +98,8 @@ def main():
     lmp.cmd.group('all', 'type', '1')
     lmp.cmd.displace_atoms('all', 'move', VOID_RADIUS+DISLOCATION_INITIAL_DISPLACEMENT, 0, 0, 'units', 'box')
 
+    lmp.cmd.write_dump('all', 'custom', os.path.join(OUTPUT_DIR, 'reference_displaced.txt'))
+
     # Create Regions
     lmp.cmd.region('void_reg', 'sphere', simBoxCenter[0], simBoxCenter[1], simBoxCenter[2], VOID_RADIUS)
     lmp.cmd.region('top_surface_reg', 'block', 'INF', 'INF', (ymax-FIXED_SURFACE_DEPTH), 'INF', 'INF', 'INF')
@@ -110,7 +112,7 @@ def main():
     lmp.cmd.group('mobile_atoms', 'subtract', 'all', 'void', 'top_surface', 'bottom_surface')
 
     #--- Remove atoms ---#
-    lmp.cmd.delete_atoms('group', 'void')
+    lmp.cmd.delete_atoms('group', 'void')    
 
     #--- Define Computes ---#
     lmp.cmd.compute('peratom', 'all', 'pe/atom')
