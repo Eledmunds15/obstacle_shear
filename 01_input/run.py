@@ -7,9 +7,9 @@
 # Command: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 01_input/run.py
 # =============================================================
 
-# ---------------------------
+# =============================================================
 # IMPORT LIBRARIES
-# ---------------------------
+# =============================================================
 import os
 import numpy as np
 import subprocess
@@ -38,14 +38,39 @@ POTENTIAL_FILE = os.path.join(POTENTIALS_DIR, 'malerba.fs') # Potential file
 # SIMULATION PARAMETERS
 # =============================================================
 # Lattice dimensions (angstrom)
-X_MIN = 100  # LENGTH ALONG X
-Y_MIN = 50  # LENGTH ALONG Y
-Z_MIN = 40  # LENGTH ALONG Z
+X_LEN = 150  # LENGTH ALONG X
+Y_LEN = 30  # LENGTH ALONG Y
+Z_LEN = 30  # LENGTH ALONG Z
+
+X_DIR = '[111]'
+Y_DIR = '[1-10]'
+Z_DIR = '[11-2]'
+
+# =============================================================
+# FILENAMES
+# =============================================================
+
+OUTPUT_FILENAME = f'edge_dislo_{X_LEN}_{Y_LEN}_{Z_LEN}.lmp'
+
+UNITCELL = 'unitcell.cfg'
+TOP = 'top.cfg'
+BOTTOM = 'bottom.cfg'
+TMP_FILE = OUTPUT_FILENAME
+
+OUTPUT_PATH = os.path.join(OUTPUT_DIR, OUTPUT_FILENAME)
 
 # =============================================================
 # MAIN FUNCTION
 # =============================================================
 def main():
+
+    # ---------------------------
+    # Check if files are removed
+    # ---------------------------
+    for file in [UNITCELL, TOP, BOTTOM, TMP_FILE]:
+        if os.path.exists(file):
+            os.remove(file)
+
     # ---------------------------
     # Load EAM potential
     # ---------------------------
@@ -58,17 +83,22 @@ def main():
     # Define dislocation
     # ---------------------------
 
-    subprocess.run(['atomsk', '--create', 'bcc', str(alat), 'Fe', 'orient', '[111]', '[1-10]', '[11-2]', 'Fe_unitcell.cfg'])
+    subprocess.run(['atomsk', '--create', 'bcc', str(alat), 'Fe', 'orient', X_DIR, Y_DIR, Z_DIR, UNITCELL])
 
-    subprocess.run(['atomsk', 'Fe_unitcell.cfg', '-duplicate', str(X_MIN), str(Y_MIN), str(Z_MIN), '-deform', 'X', str(0.5/X_MIN), '0.0', 'bottom.cfg'])
+    subprocess.run(['atomsk', UNITCELL, '-duplicate', str(X_LEN), str(Y_LEN), str(Z_LEN), '-deform', 'X', str(0.5/X_LEN), '0.0', BOTTOM])
 
-    subprocess.run(['atomsk', 'Fe_unitcell.cfg', '-duplicate', str(X_MIN+1), str(Y_MIN), str(Z_MIN), '-deform', 'X', str(-0.5/(X_MIN+1)), '0.0', 'top.cfg'])
+    subprocess.run(['atomsk', UNITCELL, '-duplicate', str(X_LEN+1), str(Y_LEN), str(Z_LEN), '-deform', 'X', str(-0.5/(X_LEN+1)), '0.0', TOP])
 
-    subprocess.run(['atomsk', '--merge', 'Y', '2', 'bottom.cfg', 'top.cfg', f'edge_dislo_{X_MIN}_{Y_MIN}_{Z_MIN}.lmp'])
+    subprocess.run(['atomsk', '--merge', 'Y', '2', BOTTOM, TOP, TMP_FILE])
 
-# =============================================================
-# FUNCTIONS
-# =============================================================
+    subprocess.run(['cp', TMP_FILE, OUTPUT_PATH])
+
+    # ---------------------------
+    # Remove files
+    # ---------------------------
+    for file in [UNITCELL, TOP, BOTTOM, TMP_FILE]:
+        if os.path.exists(file):
+            os.remove(file)
 
 # =============================================================
 # ENTRY POINT

@@ -4,42 +4,63 @@
 # Version: v1.0
 # Description: Python script to produce input for void calculations.
 # Note: Dislocation is aligned along X, glide plane along Y axis.
-# Run: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 03_pin_dislo/analysis.py
+# Run: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 03_shear/analysis.py
 # =============================================================
 
-# ---------------------------
+# =============================================================
 # IMPORT LIBRARIES
-# ---------------------------
+# =============================================================
 
 import os
 import re
 import numpy as np
 from mpi4py import MPI
+import traceback
 
 from ovito.io import import_file, export_file
 from ovito.modifiers import DislocationAnalysisModifier, WignerSeitzAnalysisModifier, DeleteSelectedModifier, InvertSelectionModifier, ExpressionSelectionModifier
 from ovito.pipeline import FileSource
 
 # =============================================================
+# INITIALISE MPI
+# =============================================================
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+size = comm.Get_size()
+
+# =============================================================
 # PATH SETTINGS
 # =============================================================
 
 BASE_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '000_data')) # Master data directory
-STAGE_DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, '03_pin_dislo')) # Stage data directory
+STAGE_DATA_DIR = os.path.abspath(os.path.join(BASE_DIR, '03_shear')) # Stage data directory
+CASE_DIR = os.path.abspath(os.path.join(STAGE_DATA_DIR, 'prec_R30_T1000_V0.001_4773'))
 
-DXA_DIR = os.path.join(STAGE_DATA_DIR, 'dxa') # File with DXA analysis
-DXA_SUMMARY_DIR = os.path.join(STAGE_DATA_DIR, 'dxa_summary') # File with DXA summary files
-DXA_ATOMS_DIR = os.path.join(STAGE_DATA_DIR, 'dxa_atoms') # File with the atoms extracted by DXA
-WS_VAC_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz_vacs') # File with wigner seitz analysis files
-WS_SIA_DIR = os.path.join(STAGE_DATA_DIR, 'wigner_seitz_sias') # File with wigner seitz analysis files
+for directory in [STAGE_DATA_DIR, CASE_DIR]:
+    if rank == 0:
+        try:
+            if not os.path.exists(directory):
+                raise FileNotFoundError(f"Directory does not exist: {directory}")
+        except Exception as e:
+            print(f"[Rank {rank}] Error with directory: {directory}")
+            traceback.print_exc()
+            raise
+    comm.Barrier()  # ensure all ranks wait until rank 0 finishes the check
+
+DXA_DIR = os.path.join(CASE_DIR, 'dxa') # File with DXA analysis
+DXA_SUMMARY_DIR = os.path.join(CASE_DIR, 'dxa_summary') # File with DXA summary files
+DXA_ATOMS_DIR = os.path.join(CASE_DIR, 'dxa_atoms') # File with the atoms extracted by DXA
+WS_VAC_DIR = os.path.join(CASE_DIR, 'wigner_seitz_vacs') # File with wigner seitz analysis files
+WS_SIA_DIR = os.path.join(CASE_DIR, 'wigner_seitz_sias') # File with wigner seitz analysis files
 
 for directory in [DXA_DIR, DXA_SUMMARY_DIR, DXA_ATOMS_DIR, WS_VAC_DIR, WS_SIA_DIR]:
     os.makedirs(directory, exist_ok=True)
 
+# REFERENCE FILE FOR WIGNER SEITZ ANALYSIS
 REFERENCE_DIR = os.path.abspath(os.path.join(BASE_DIR, '02_minimize', 'dump')) # Input directory
-REFERENCE_FILE = os.path.join(REFERENCE_DIR, 'edge_dislo_100_60_40_dump') # Input file
+REFERENCE_FILE = os.path.join(REFERENCE_DIR, 'edge_dislo_100_30_40_dump') # Input file
 
-DATA_DIR = os.path.abspath(os.path.join(STAGE_DATA_DIR, 'dump'))
+DATA_DIR = os.path.abspath(os.path.join(CASE_DIR, 'dump'))
 
 # =============================================================
 # MAIN FUNCTION
@@ -173,7 +194,7 @@ def performWS(data):
             columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z"],
     )
 
-    print(f"DXA for timestep {timestep} complete...", flush=True)
+    print(f"WS for timestep {timestep} complete...", flush=True)
 
     return None
 
