@@ -1,13 +1,23 @@
+# =============================================================
+# LAMMPS Dislocation-Void Interaction Simulation
+# Author: Ethan L. Edmunds
+# Version: v1.0
+# Description: Python script to produce input for void calculations.
+# Note: Dislocation is aligned along X, glide plane along Y axis.
+# Run: apptainer exec 00_envs/lmp_CPU_22Jul2025.sif python3 03_pin_dislo/analysis.py
+# =============================================================
+
 # ---------------------------
 # IMPORT LIBRARIES
 # ---------------------------
 
 import os
 import re
+import numpy as np
 from mpi4py import MPI
 
 from ovito.io import import_file, export_file
-from ovito.modifiers import DislocationAnalysisModifier, WignerSeitzAnalysisModifier, DeleteSelectedModifier, InvertSelectionModifier
+from ovito.modifiers import DislocationAnalysisModifier, WignerSeitzAnalysisModifier, DeleteSelectedModifier, InvertSelectionModifier, ExpressionSelectionModifier
 from ovito.pipeline import FileSource
 
 # =============================================================
@@ -75,15 +85,15 @@ def process_file(dump_chunk):
         pipeline = import_file(frame)
         data = pipeline.compute()
 
-        performDXA(data)
-        performWS(data)
+        performDXA(data.clone())
+        performWS(data.clone())
         
         print(f"Successfully processed frame {frame}...", flush=True)
 
 def performDXA(data):
 
     dxaModifier = DislocationAnalysisModifier(input_crystal_structure=DislocationAnalysisModifier.Lattice.BCC)
-    # Ignore defect mesh when exporting ???
+    
     data.apply(dxaModifier) # Run DXA
     
     # Select normal sites
@@ -96,7 +106,7 @@ def performDXA(data):
 
     timestep = data.attributes['Timestep']
 
-    export_file(data, os.path.join(DXA_DIR, f'dxa_{int(timestep)}'), "ca", export_mesh=False)
+    export_file(data, os.path.join(DXA_DIR, f'dxa_{int(timestep)}'), "ca")
 
     export_file(data, os.path.join(DXA_ATOMS_DIR, f'dxa_atoms_{int(timestep)}'), "lammps/dump",
             columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z", "c_peratom", "Cluster"])
@@ -107,60 +117,58 @@ def performDXA(data):
 
 def performWS(data):
 
-    # Modifier Definition
+    timestep = data.attributes['Timestep']
+
+    """
+    print(f"Timestep: {timestep}")
+    print(f"Number of particles: {np.sum(data.particles.count)}")
+    """
+
+    # Create Wignerseitz modifier
     wsModifier = WignerSeitzAnalysisModifier()
     wsModifier.reference = FileSource()
     wsModifier.reference.load(REFERENCE_FILE)
 
     data.apply(wsModifier)
 
-    timestep = data.attributes['Timestep']
-
-    """print(f"Data in data: {data.particles}")
-    print(f"Number of total particles {data.particles.count}")"""
-
-    data_vac = data.clone()
-    data_sia = data.clone()
-
-    """print(f"\nVacancies")
-    print(f"Data in data: {data_vac.particles}")
-    print(f"Number of total particles {data_vac.particles.count}")
-
-    print(f"\nSelf-interstitials")
-    print(f"Data in data: {data_sia.particles}")
-    print(f"Number of total particles {data_sia.particles.count}")"""
-
     occupancies = data.particles['Occupancy']
 
-    selection_vac = data_vac.particles_.create_property('Selection')
-    selection_sia = data_sia.particles_.create_property('Selection')
+    vac_data = data.clone()
+    sia_data = data.clone()
 
-    selection_vac[...] = (occupancies == 0)
-    selection_sia[...] = (occupancies == 2)
+    vac_selection = vac_data.particles_.create_property('Selection')
+    sia_selection = sia_data.particles_.create_property('Selection')
 
-    """print(f"\nNumber of vacancies = {np.sum(selection_vac)}")
-    print(f"Number of self-interstitial = {np.sum(selection_sia)}")"""
+    vac_selection[...] = (occupancies == 0)
+    sia_selection[...] = (occupancies == 2)
 
-    data_vac.apply(InvertSelectionModifier())
-    data_sia.apply(InvertSelectionModifier())
+    """
+    print(f"Number of particles selected (vac): {np.sum(vac_selection)}")
+    print(f"Number of particles selected (sia): {np.sum(sia_selection)}")
+    """
 
-    data_vac.apply(DeleteSelectedModifier())
-    data_sia.apply(DeleteSelectedModifier())
+    vac_data.apply(InvertSelectionModifier())
+    sia_data.apply(InvertSelectionModifier())
 
-    """print(data_vac.particles.count)
-    print(data_sia.particles.count)"""
+    vac_data.apply(DeleteSelectedModifier())
+    sia_data.apply(DeleteSelectedModifier())
+
+    """
+    print(f"Number of particles in vac: {vac_data.particles.count}")
+    print(f"Number of particles in sia: {sia_data.particles.count}")
+    """
 
     # Export the file
     export_file(
-            data_vac,
+            vac_data,
             os.path.join(WS_VAC_DIR, f'ws_vac_{timestep}'),
             "lammps/dump",
             columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z"],
         )
 
     export_file(
-            data_sia,
-            os.path.join(WS_SIA_DIR, f'ws_vac_{timestep}'),
+            sia_data,
+            os.path.join(WS_SIA_DIR, f'ws_sia_{timestep}'),
             "lammps/dump",
             columns=["Particle Identifier", "Position.X", "Position.Y", "Position.Z"],
     )

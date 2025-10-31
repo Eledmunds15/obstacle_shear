@@ -44,17 +44,17 @@ EXTERNAL_FILE = os.path.join(os.path.dirname(__file__), 'funcs.py')
 # SIMULATION PARAMETERS
 # =============================================================
 
-VOID_RADIUS = 10 # Angstroms
+VOID_RADIUS = 15 # Angstroms
 DISLOCATION_INITIAL_DISPLACEMENT = 40 # Distance from the void in Angstroms
 FIXED_SURFACE_DEPTH = 5 # Depth of the fixed surface in Angstroms
 
 DT = 0.001
-TEMPERATURE = 10
+TEMPERATURE = 100
 SHEAR_VELOCITY = 0.01
 
-RUN_TIME = 1000
-THERMO_FREQ = 100
-DUMP_FREQ = 100
+RUN_TIME = 150000
+THERMO_FREQ = 1000
+DUMP_FREQ = 1000
 RESTART_FREQ = DUMP_FREQ
 
 # =============================================================
@@ -98,7 +98,7 @@ def main():
     lmp.cmd.group('all', 'type', '1')
     lmp.cmd.displace_atoms('all', 'move', VOID_RADIUS+DISLOCATION_INITIAL_DISPLACEMENT, 0, 0, 'units', 'box')
 
-    lmp.cmd.write_dump('all', 'custom', os.path.join(OUTPUT_DIR, 'reference_displaced.txt'))
+    lmp.cmd.write_dump('all', 'custom', os.path.join(OUTPUT_DIR, 'reference_displaced.txt'), 'id', 'x', 'y', 'z')
 
     # Create Regions
     lmp.cmd.region('void_reg', 'sphere', simBoxCenter[0], simBoxCenter[1], simBoxCenter[2], VOID_RADIUS)
@@ -112,7 +112,9 @@ def main():
     lmp.cmd.group('mobile_atoms', 'subtract', 'all', 'void', 'top_surface', 'bottom_surface')
 
     #--- Remove atoms ---#
-    lmp.cmd.delete_atoms('group', 'void')    
+    lmp.cmd.delete_atoms('group', 'void') 
+
+    lmp.cmd.write_dump('all', 'custom', os.path.join(OUTPUT_DIR, 'reference_displaced_void.txt'), 'id', 'x', 'y', 'z')
 
     #--- Define Computes ---#
     lmp.cmd.compute('peratom', 'all', 'pe/atom')

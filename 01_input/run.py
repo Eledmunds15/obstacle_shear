@@ -39,7 +39,7 @@ POTENTIAL_FILE = os.path.join(POTENTIALS_DIR, 'malerba.fs') # Potential file
 # =============================================================
 # Lattice dimensions (angstrom)
 X_MIN = 100  # LENGTH ALONG X
-Y_MIN = 30  # LENGTH ALONG Y
+Y_MIN = 50  # LENGTH ALONG Y
 Z_MIN = 40  # LENGTH ALONG Z
 
 # =============================================================
